@@ -1,5 +1,6 @@
-import { AspectRatio, Badge, Card, CardContent, Typography, useColorScheme } from "@mui/joy";
+import { AspectRatio, Badge, Card, CardContent, Chip, Typography, useColorScheme } from "@mui/joy";
 import MuiLink from "@mui/joy/Link";
+import { ExternalLink, Twitter } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface Props {
@@ -15,6 +16,10 @@ const isYouTubeShortsUrl = (url: string) => {
   return url.includes("youtube.com/shorts");
 };
 
+const isTwitterUrl = (url: string) => {
+  return url.includes("twitter.com");
+};
+
 const Link: React.FC<Props> = ({ text, url }: Props) => {
   //states for youtube video
   const [title, setTitle] = useState<string | undefined>(undefined);
@@ -26,6 +31,24 @@ const Link: React.FC<Props> = ({ text, url }: Props) => {
   const [shortsTitle, setShortsTitle] = useState<string | undefined>(undefined);
   const [shortsThumbnail, setShortsThumbnail] = useState<string | undefined>(undefined);
   const [shortsCreator, setShortsCreator] = useState<string | undefined>(undefined);
+
+  //states for twitter
+  const [tweetContent, setTweetContent] = useState<string | undefined>(undefined);
+  const [tweetProfileName, setTweetProfileName] = useState<string | undefined>(undefined);
+  const [tweetAuthorUsername, setTweetAuthorUsername] = useState<string | undefined>(undefined);
+  const [tweetDate, setTweetDate] = useState<string | undefined>(undefined);
+
+  function extractTweetText(html: string) {
+    // Create a DOMParser to parse the HTML string
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+
+    // Find the tweet text within the parsed HTML
+    const tweetElement = doc.querySelector(".twitter-tweet");
+    const tweetText = tweetElement ? tweetElement.textContent : "";
+
+    return tweetText?.trim();
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,6 +74,18 @@ const Link: React.FC<Props> = ({ text, url }: Props) => {
             setCreator(data.author_name);
           }
         }
+        if (isTwitterUrl(url)) {
+          // Fetch Twitter data using noembed
+          const response = await fetch(`https://noembed.com/embed?dataType=json&url=${url}`);
+          if (response) {
+            const twitterData = await response.json();
+            const tweetText = extractTweetText(twitterData.html);
+            setTweetProfileName(twitterData.author_name);
+            setTweetAuthorUsername(twitterData.author_url.toString().split("/")[3]);
+            setTweetContent(tweetText?.toString().split("pic")[0]);
+            setTweetDate(tweetText?.toString().split(")")[1]);
+          }
+        }
       } catch (error) {
         console.error("Error fetching video info:", error);
       }
@@ -59,7 +94,7 @@ const Link: React.FC<Props> = ({ text, url }: Props) => {
     fetchData();
   }, [url]);
 
-  const { mode, systemMode } = useColorScheme();
+  // const { mode, systemMode } = useColorScheme();
 
   const renderLink = () => {
     if (isYouTubeShortsUrl(url)) {
@@ -72,10 +107,10 @@ const Link: React.FC<Props> = ({ text, url }: Props) => {
               orientation="vertical"
               sx={{
                 width: "100%",
-                backgroundColor: "rgba(0, 0, 0, 0.25)",
-                "&:hover": {
-                  backgroundColor: "rgba(0, 0, 0, 0.5)",
-                },
+                // backgroundColor: "rgba(0, 0, 0, 0.25)",
+                // "&:hover": {
+                //   backgroundColor: "rgba(0, 0, 0, 0.5)",
+                // },
               }}
             >
               <AspectRatio ratio={"16/9"} sx={{ width: "100%" }} objectFit={"cover"}>
@@ -90,7 +125,18 @@ const Link: React.FC<Props> = ({ text, url }: Props) => {
                   )}
                 </Typography>
                 <Typography level="body-sm" aria-describedby="card-description" mb={1}>
-                  <p className="mt-4">{creator}</p>
+                  <div className="flex items-center justify-between mt-4">
+                    <p className="">{shortsCreator}</p>
+                    <Chip
+                      variant="plain"
+                      color="neutral"
+                      sx={{
+                        "--Chip-paddingInline": "40px",
+                      }}
+                    >
+                      short
+                    </Chip>
+                  </div>
                 </Typography>
                 <MuiLink
                   overlay
@@ -105,25 +151,25 @@ const Link: React.FC<Props> = ({ text, url }: Props) => {
           </div>
 
           {/* For large screens */}
-          <div className="hidden lg:flex mt-4 z-0">
-            <Badge sx={{ width: "100%" }} color="danger" badgeContent={"short"} anchorOrigin={{ vertical: "top", horizontal: "left" }}>
+          <div className="hidden lg:flex mt-4 z-0 scale-95">
+            <Badge sx={{ width: "100%" }} color="danger" variant="outlined">
               <Card
                 variant="soft"
                 orientation="horizontal"
                 sx={{
                   width: "100%",
                   //backgroundColor: "rgba(0, 0, 0, 0.0)",
-                  border: "1px solid rgba(0, 0, 0, 0.0)",
-                  transition: "ease-in-out",
-                  transitionDuration: "0.25s",
-                  "&:hover": {
-                    //backgroundColor: "rgba(0, 0, 0, 0.5)",
-                    border: `1px solid ${mode === "dark" || systemMode === "dark" ? "rgba(255, 255, 255, 0.5)" : "rgba(0, 0, 0, 1)"}`, // Adjust the colors based on your theme
-                  },
+                  // border: "1px solid rgba(0, 0, 0, 0.0)",
+                  // transition: "ease-in-out",
+                  // transitionDuration: "0.25s",
+                  // "&:hover": {
+                  //   //backgroundColor: "rgba(0, 0, 0, 0.5)",
+                  //   border: `1px solid ${mode === "dark" || systemMode === "dark" ? "rgba(255, 255, 255, 0.5)" : "rgba(0, 0, 0, 1)"}`, // Adjust the colors based on your theme
+                  // },
                 }}
               >
                 <AspectRatio ratio={"16/9"} sx={{ width: "25%" }} objectFit={"cover"}>
-                  <img src={shortsThumbnail} alt={shortsTitle} />
+                  <img src={shortsThumbnail} alt={shortsTitle} className="" />
                 </AspectRatio>
                 <CardContent sx={{ display: "flex", justifyContent: "space-between" }}>
                   <Typography level="title-lg" id="card-description">
@@ -134,7 +180,18 @@ const Link: React.FC<Props> = ({ text, url }: Props) => {
                     )}
                   </Typography>
                   <Typography level="body-sm" aria-describedby="card-description" mb={1}>
-                    <p className="mt-4">{shortsCreator}</p>
+                    <p className="">{shortsCreator}</p>
+                    {/* <div className="flex items-center justify-between mt-4">
+                    <Chip
+                      variant="plain"
+                      color="neutral"
+                      sx={{
+                        "--Chip-paddingInline": "40px",
+                      }}
+                    >
+                      short
+                    </Chip>
+                  </div> */}
                   </Typography>
                   <MuiLink
                     overlay
@@ -161,10 +218,8 @@ const Link: React.FC<Props> = ({ text, url }: Props) => {
               orientation="vertical"
               sx={{
                 width: "100%",
-                backgroundColor: "rgba(0, 0, 0, 0.25)",
-                "&:hover": {
-                  backgroundColor: "rgba(0, 0, 0, 0.5)",
-                },
+                // backgroundColor: `${mode === "dark" ? "rgba(0, 0, 0, 0.5)" : "rgba(0, 0, 0, 0.01)"}`,
+                //border: "1px solid rgba(0, 0, 0, 1.0)",
               }}
             >
               <AspectRatio ratio={"16/9"} sx={{ width: "100%" }} objectFit={"cover"}>
@@ -179,7 +234,18 @@ const Link: React.FC<Props> = ({ text, url }: Props) => {
                   )}
                 </Typography>
                 <Typography level="body-sm" aria-describedby="card-description" mb={1}>
-                  <p className="mt-4">{creator}</p>
+                  <div className="flex items-center justify-between mt-4">
+                    <p className="">{creator}</p>
+                    <Chip
+                      variant="plain"
+                      color="neutral"
+                      sx={{
+                        "--Chip-paddingInline": "40px",
+                      }}
+                    >
+                      video
+                    </Chip>
+                  </div>
                 </Typography>
                 <MuiLink
                   overlay
@@ -194,25 +260,25 @@ const Link: React.FC<Props> = ({ text, url }: Props) => {
           </div>
 
           {/* For large screens */}
-          <div className="hidden lg:flex mt-4 z-0 relative">
-            <Badge sx={{ width: "100%" }} color="danger" badgeContent={"video"} anchorOrigin={{ vertical: "top", horizontal: "left" }}>
+          <div className="hidden lg:flex mt-4 z-0 scale-95">
+            <Badge sx={{ width: "100%" }} color="danger" variant="solid">
               <Card
                 variant="soft"
                 orientation="horizontal"
                 sx={{
                   width: "100%",
-                  //backgroundColor: "rgba(0, 0, 0, 0.0)",
-                  border: "1px solid rgba(0, 0, 0, 0.0)",
-                  transition: "ease-in-out",
-                  transitionDuration: "0.25s",
-                  "&:hover": {
-                    //backgroundColor: "rgba(0, 0, 0, 0.5)",
-                    border: `1px solid ${mode === "dark" || systemMode === "dark" ? "rgba(255, 255, 255, 0.5)" : "rgba(0, 0, 0, 1)"}`, // Adjust the colors based on your theme
-                  },
+                  // backgroundColor: `${mode === "dark" || systemMode === "dark" ? "rgba(0, 0, 0, 0.25)" : "rgba(0, 0, 0, 0.05)"}`,
+                  // //border: "1px solid rgba(0, 0, 0, 0.0)",
+                  // transition: "ease-in-out",
+                  // transitionDuration: "0.25s",
+                  // "&:hover": {
+                  //   backgroundColor: `${mode === "dark" || systemMode === "dark" ? "rgba(0, 0, 0, 0.5)" : "rgba(0, 0, 0, 0.1)"}`,
+                  //   //border: `1px solid ${mode === "dark" || systemMode === "dark" ? "rgba(255, 255, 255, 0.5)" : "rgba(0, 0, 0, 1)"}`, // Adjust the colors based on your theme
+                  // },
                 }}
               >
                 <AspectRatio ratio={"16/9"} sx={{ width: "25%" }} objectFit={"cover"}>
-                  <img src={thumbnail} alt={title} />
+                  <img src={thumbnail} alt={title} className="" />
                 </AspectRatio>
                 <CardContent sx={{ display: "flex", justifyContent: "space-between" }}>
                   <Typography level="title-lg" id="card-description">
@@ -229,6 +295,84 @@ const Link: React.FC<Props> = ({ text, url }: Props) => {
                 </CardContent>
               </Card>
             </Badge>
+          </div>
+        </>
+      );
+    }
+    if (isTwitterUrl(url)) {
+      return (
+        <>
+          {/* For small screen */}
+          <div className="flex lg:hidden">
+            <Card
+              variant="soft"
+              orientation="vertical"
+              sx={{
+                width: "100%",
+                // backgroundColor: `${mode === "dark" ? "rgba(0, 0, 0, 0.5)" : "rgba(0, 0, 0, 0.01)"}`,
+                //border: "1px solid rgba(0, 0, 0, 1.0)",
+              }}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-col items-start">
+                  <Typography level="title-lg" id="card-description">
+                    <p>{tweetProfileName}</p>
+                  </Typography>
+
+                  <Typography level="title-sm" id="card-description">
+                    <span>{"(@"}</span>
+                    <span>{tweetAuthorUsername}</span>
+                    <span>{")"}</span>
+                  </Typography>
+                </div>
+                <Twitter />
+              </div>
+              <Typography level="body-sm" id="card-description">
+                <p>{tweetContent}</p>
+              </Typography>
+              <Typography level="body-xs" id="card-description">
+                <p className="italic">{tweetDate}</p>
+              </Typography>
+              <MuiLink overlay underline={"none"} href={url} target="_black" rel="noopener noreferrer" />
+            </Card>
+          </div>
+
+          {/* For large screens */}
+          <div className="hidden lg:flex mt-4 z-0 scale-95">
+            <Card
+              variant="soft"
+              orientation="vertical"
+              sx={{
+                width: "100%",
+                backgroundColor: "bg",
+              }}
+            >
+              <div className="flex flex-row justify-between items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <Twitter className="text-blue-400" />
+                  <Typography level="title-lg" id="card-description">
+                    <p>{tweetProfileName}</p>
+                  </Typography>
+
+                  <Typography level="title-sm" id="card-description">
+                    <span>{"(@"}</span>
+                    <span>{tweetAuthorUsername}</span>
+                    <span>{")"}</span>
+                  </Typography>
+                </div>
+                <div className="flex justify-end">
+                  <MuiLink underline={"none"} href={url} target="_black" rel="noopener noreferrer">
+                    <ExternalLink className="text-gray-400" />
+                  </MuiLink>
+                </div>
+              </div>
+              <Typography level="body-" id="card-description">
+                <p>{tweetContent}</p>
+              </Typography>
+              <Typography level="body-xs" id="card-description">
+                <p className="italic">{tweetDate}</p>
+              </Typography>
+            </Card>
           </div>
         </>
       );
