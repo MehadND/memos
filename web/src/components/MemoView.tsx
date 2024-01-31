@@ -1,4 +1,4 @@
-import { Divider, Tooltip } from "@mui/joy";
+import { Button, Divider, Tooltip } from "@mui/joy";
 import classNames from "classnames";
 import copy from "copy-to-clipboard";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
@@ -165,6 +165,26 @@ const MemoView: React.FC<Props> = (props: Props) => {
     }
   }, []);
 
+  const [expand, setExpand] = useState(false);
+  const [showExpandButton, setShowExpandButton] = useState(false);
+
+  const handleExpand = () => {
+    setExpand(!expand);
+  };
+
+  useEffect(() => {
+    //if a memo has more than 2 nodes then show expand button and show partial view of memo
+    if (memo.nodes.length > 2) {
+      setExpand(false);
+      setShowExpandButton(true);
+    }
+    // otherwise dont show expand button
+    else {
+      setExpand(true);
+      setShowExpandButton(false);
+    }
+  }, [memo.nodes]);
+
   return (
     <div
       className={classNames("group memo-wrapper", "memos-" + memo.id, memo.pinned && props.showPinned ? "pinned" : "", className)}
@@ -208,6 +228,21 @@ const MemoView: React.FC<Props> = (props: Props) => {
                     <VisibilityIcon visibility={memo.visibility} />
                   </span>
                 </Tooltip>
+              </>
+            )}
+          </div>
+          <div>
+            {showExpandButton && (
+              <>
+                {expand ? (
+                  <span className="btn more-action-btn" onClick={handleExpand}>
+                    <Icon.ChevronsDownUp className="icon-img scale-125" />
+                  </span>
+                ) : (
+                  <span className="btn more-action-btn" onClick={handleExpand}>
+                    <Icon.ChevronsUpDown className="icon-img scale-125" />
+                  </span>
+                )}
               </>
             )}
           </div>
@@ -257,9 +292,30 @@ const MemoView: React.FC<Props> = (props: Props) => {
           )}
         </div>
       </div>
-      <MemoContent memoId={memo.id} nodes={memo.nodes} readonly={readonly} onClick={handleMemoContentClick} />
-      <MemoResourceListView resources={memo.resources} />
-      <MemoRelationListView memo={memo} relationList={referenceRelations} />
+      <div className={`h-${expand ? "fit " : "24"} w-full overflow-hidden rounded-xl`}>
+        <span className="text-red-300">{memo.nodes.length}</span>
+        <MemoContent memoId={memo.id} nodes={memo.nodes} readonly={readonly} onClick={handleMemoContentClick} />
+        <MemoResourceListView resources={memo.resources} />
+        <MemoRelationListView memo={memo} relationList={referenceRelations} />
+      </div>
+      {showExpandButton && (
+        <>
+          {expand && (
+            <div className="flex items-center justify-center w-full mt-2">
+              <Button variant="plain" className=" " onClick={handleExpand}>
+                Click To Hide
+              </Button>
+            </div>
+          )}
+          {!expand && (
+            <div className="flex items-center justify-center w-full mt-2">
+              <Button variant="plain" className=" " onClick={handleExpand}>
+                Click To Show
+              </Button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };
